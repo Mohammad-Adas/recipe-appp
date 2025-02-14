@@ -2,23 +2,32 @@ import { Heart, HeartPulse, Soup } from "lucide-react";
 import { useState } from "react";
 
 const getTwoValuesFromArray = (arr) => {
-	return [arr[0], arr[1]];
+	return arr && arr.length > 0 ? arr.slice(0, 2) : ["No Health Info"];
 };
 
 const RecipeCard = ({ recipe, bg, badge }) => {
+	// Ensure valid data mapping
 	const healthLabels = getTwoValuesFromArray(recipe.healthLabels);
-	const [isFavorite, setIsFavorite] = useState(localStorage.getItem("favorites")?.includes(recipe.label));
+	const cuisine = recipe.cuisine || "Unknown"; // Use `cuisine`
+	const recipeTitle = recipe.title || "No Title";
+	const recipeImage = recipe.image || "default-image.jpg";
+
+	// Handle favorites logic
+	const storedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
+	const isFavorite = storedFavorites.some((fav) => fav.title === recipe.title);
+
+	const [favorite, setFavorite] = useState(isFavorite);
 
 	const addRecipeToFavorites = () => {
 		let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
-		const isRecipeAlreadyInFavorites = favorites.some((fav) => fav.label === recipe.label);
+		const isAlreadyFavorited = favorites.some((fav) => fav.title === recipe.title);
 
-		if (isRecipeAlreadyInFavorites) {
-			favorites = favorites.filter((fav) => fav.label !== recipe.label);
-			setIsFavorite(false);
+		if (isAlreadyFavorited) {
+			favorites = favorites.filter((fav) => fav.title !== recipe.title);
+			setFavorite(false);
 		} else {
 			favorites.push(recipe);
-			setIsFavorite(true);
+			setFavorite(true);
 		}
 
 		localStorage.setItem("favorites", JSON.stringify(favorites));
@@ -27,14 +36,15 @@ const RecipeCard = ({ recipe, bg, badge }) => {
 	return (
 		<div className={`flex flex-col rounded-md ${bg} overflow-hidden p-3 relative`}>
 			<a
-				href={`https://www.youtube.com/results?search_query=${recipe.label} recipe`}
+				href={recipe.youtubeLink ? recipe.youtubeLink : `https://www.youtube.com/results?search_query=${recipeTitle} recipe`}
 				target='_blank'
+				rel='noopener noreferrer'
 				className='relative h-32'
 			>
 				<div className='skeleton absolute inset-0' />
 				<img
-					src={recipe.image}
-					alt='recipe img'
+					src={recipeImage}
+					alt={recipeTitle}
 					className='rounded-md w-full h-full object-cover cursor-pointer opacity-0 transition-opacity duration-500'
 					onLoad={(e) => {
 						e.currentTarget.style.opacity = 1;
@@ -42,11 +52,9 @@ const RecipeCard = ({ recipe, bg, badge }) => {
 					}}
 				/>
 				<div
-					className='absolute bottom-2 left-2 bg-white rounded-full p-1 cursor-pointer flex items-center
-							 gap-1 text-sm
-							'
+					className='absolute bottom-2 left-2 bg-white rounded-full p-1 cursor-pointer flex items-center gap-1 text-sm'
 				>
-					<Soup size={16} /> {recipe.yield} Servings
+					{/*<Soup size={16} /> {recipe.servings || "N/A"} Servings*/}
 				</div>
 
 				<div
@@ -56,17 +64,18 @@ const RecipeCard = ({ recipe, bg, badge }) => {
 						addRecipeToFavorites();
 					}}
 				>
-					{!isFavorite && <Heart size={20} className='hover:fill-red-500 hover:text-red-500' />}
-					{isFavorite && <Heart size={20} className='fill-red-500 text-red-500' />}
+					{!favorite ? (
+						<Heart size={20} className='hover:fill-red-500 hover:text-red-500' />
+					) : (
+						<Heart size={20} className='fill-red-500 text-red-500' />
+					)}
 				</div>
 			</a>
 
 			<div className='flex mt-1'>
-				<p className='font-bold tracking-wide'>{recipe.label}</p>
+				<p className='font-bold tracking-wide'>{recipeTitle}</p>
 			</div>
-			<p className='my-2'>
-				{recipe.cuisineType[0].charAt(0).toUpperCase() + recipe.cuisineType[0].slice(1)} Kitchen
-			</p>
+			<p className='my-2'>{cuisine} Kitchen</p>
 
 			<div className='flex gap-2 mt-auto'>
 				{healthLabels.map((label, idx) => (
@@ -79,4 +88,5 @@ const RecipeCard = ({ recipe, bg, badge }) => {
 		</div>
 	);
 };
+
 export default RecipeCard;
